@@ -1,4 +1,5 @@
 library(hexView)
+library(corrplot)
 
 my.data <- readEViews("golf.wf1", as.data.frame = TRUE)
 summary(my.data)
@@ -30,17 +31,30 @@ explanatory.variable.matrix <- my.data[, !(colnames(my.data) %in% c("AVEFEE","CA
 
 #create and plot correlation matrix
 correlation.matrix <- cor(explanatory.variable.matrix)
-
-library('corrplot')
+round(correlation.matrix, 2)
 corrplot(correlation.matrix, method = "circle")
 
-# convert to f test function
+# Stepwise variable selection
+library(MASS)
+step <- stepAIC(the.regression, direction="both")
+step$anova
 
-#CorrelationChecker <- function(a.data.frame, a.explanatory.variable.list ) {
-#  for (i in a.explanatory.variable.list) {
-#      for(j in a.explanatory.variable.list) {
-#       with(a.explanatory.variable.list(cor(a.explantory.variable.list[i], a.explanatory.variable.list[j]))
-#    }
-#  }
-#  return
-#}
+step.model <- lm(ROUNDS ~ WINTER + FEE + FEE.SQ + MGS.FEE + MGS.FEESUB + FEESUB + 
+                   RATING + SLOPE + RAIN + RAIN.SQ + TEMP + TEMP.SQ + CART.WINTER + 
+                   DISTANCE, data = my.data)
+
+summary(step.model)
+
+# All Subsets of Explanatory Variable Regression
+#modify nbest to see more combinations, large enough nbest shows all combinations
+library(leaps)
+leaps <- regsubsets(ROUNDS ~ WINTER + FEE + FEE.SQ + MGS.FEE
+                    + MGS.FEESUB + FEESUB + FEESUB.SQ + RATING + 
+                    + SLOPE+ RAIN + RAIN.SQ + TEMP + TEMP.SQ
+                    + CART.WINTER + DISTANCE + RANGE + WINTER.FEE
+                    + YARD, data = my.data, nbest = 300, nvmax=18, really.big=T)
+# view results 
+summary(leaps)
+models.fit.vector <- sort(c(round(summary(leaps)$adjr2,5)))
+models.fit.vector
+
